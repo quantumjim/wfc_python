@@ -1,8 +1,9 @@
 MIT License
 
-Copyright (c) 2017 Isaac Karth
-
+Original version Copyright (c) 2017 Isaac Karth
 Based on WaveFunctionCollapse by mxgmn
+
+This version Copyright (c) James R. Wootton, IBM Research
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

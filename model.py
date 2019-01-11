@@ -11,17 +11,15 @@
 
 import math
 import random
-import xml.etree.ElementTree as ET
 import collections
 import uuid # used for tracking experiments
+import qrng
 
 try:
     import Image
 except ImportError:
     from PIL import Image
 
-hackstring = ""
-hackcount = 0
     
 class Model:
     def __init__(self, width, height):
@@ -35,8 +33,6 @@ class Model:
         self.FMY = height
         self.T = 2
         #self.limit = 0
-        
-        self.rng = random.Random() #todo: set rng
 
         self.wave = [[[False for _ in range(self.T)] for _ in range(self.FMY)] for _ in range(self.FMX)]
         self.changes = [[False for _ in range(self.FMY)] for _ in range(self.FMX)]
@@ -115,7 +111,7 @@ class Model:
         distribution = [0 for _ in range(0,self.T)]
         for t in range(0,self.T):
             distribution[t] = self.stationary[t] if self.wave[argminx][argminy][t] else 0
-        r = StuffRandom(distribution, self.rng.random())
+        r = StuffRandom(distribution, self.qrng.rand())
         for t in range(0,self.T):
             self.wave[argminx][argminy][t] = (t == r)
         self.changes[argminx][argminy] = True
@@ -127,8 +123,11 @@ class Model:
         for t in range(0,self.T):
             self.log_prob[t] = math.log(self.stationary[t])
         self.Clear()
-        self.rng = random.Random()
+        
+        self.rng = random.Random() # rng for random pertubations to entropy
         self.rng.seed(seed)
+        self.qrng = qrng.qrng() # quantum rng for wavefunction collapse
+        
         l = 0
         while (l < limit) or (0 == limit): # if limit == 0, then don't stop
             l += 1
@@ -137,13 +136,9 @@ class Model:
                 return result
             pcount = 0
             presult = True
-            global hackcount
 
             while(presult):
                 presult = self.Propagate()
-                
-                self.Graphics().save("in_progress_{0}_{1}.png".format(hackstring, hackcount), format="PNG")
-                hackcount += 1
 
                 #print("Propagate: {0}".format(pcount))
                 pcount += 1
@@ -329,7 +324,7 @@ class OverlappingModel(Model):
             for y in range(ymin, ymax):
                 for x in range(xmin, xmax):
                     if p1[x + self.N * y] != p2[x - dx + self.N * (y - dy)]:
-                        print(p1[x + self.N * y] != p2[x - dx + self.N * (y - dy)])
+                        #print(p1[x + self.N * y] != p2[x - dx + self.N * (y - dy)])
                         ifany = False
                         #return False
             return ifany
@@ -545,57 +540,21 @@ class Program:
     def __init__(self):
         pass
     
-    def Main(self):
+    def Main(self,tag='overlapping',name='Cat',height=48,width=48,N=2,periodicInput=True,periodic=False,symmetry=8,ground=0,screenshots=2,limit=0):
+        
         self.random = random.Random()
-        xdoc = ET.ElementTree(file="samples.xml")
-        counter = 1
-        for xnode in xdoc.getroot():
-            if("#comment" == xnode.tag):
-                continue
-            a_model = None
-            
-            name = xnode.get('name', "NAME")
-            global hackstring 
-            hackstring = name
-            
 
-        
-            print("< {0} ".format(name), end='')
-            if "overlapping" == xnode.tag:
-                #print(xnode.attrib)
-                a_model = OverlappingModel(int(xnode.get('width', 48)), int(xnode.get('height', 48)), xnode.get('name', "NAME"), int(xnode.get('N', 2)), string2bool(xnode.get('periodicInput', True)), string2bool(xnode.get('periodic', False)), int(xnode.get('symmetry', 8)), int(xnode.get('ground',0)))
-                pass
-            elif "simpletiled" == xnode.tag:
-                    print("> ", end="\n")
-                    continue
-            else:
-                    continue
-        
-        
-        
-            for i in range(0, int(xnode.get("screenshots", 2))):
-                for k in range(0, 10):
-                    print("> ", end="")
-                    seed = self.random.random()
-                    finished = a_model.Run(seed, int(xnode.get("limit", 0)))
-                    if finished:
-                        print("DONE")
-                        a_model.Graphics().save("{0}_{1}_{2}_{3}.png".format(counter, name, i, uuid.uuid4()), format="PNG")
-                        break
-                    else:
-                        print("CONTRADICTION")
-            counter += 1
+        a_model = OverlappingModel( width, height, name, N, periodicInput, periodic, symmetry, ground )
+
+        for i in range(0, screenshots):
+            for k in range(0, 10):
+                seed = self.random.random()
+                finished = a_model.Run( seed, limit)
+                if finished:
+                    a_model.Graphics().save("outputs/"+"{0}_{1}_{2}.png".format(name, i, uuid.uuid4()), format="PNG")
+                    break
         
     
-prog = Program()    
-prog.Main()
 
-#a_model = OverlappingModel(8, 8, "Chess", 2, True, True, 8,0)
-#a_model = OverlappingModel(48, 48, "Hogs", 3, True, True, 8,0)
-#gseed = random.Random()
-#finished = a_model.Run(364, 0)
-#if(finished):
-    #test_img = a_model.Graphics()
-#else:
-#    print("CONTRADICTION")
-#test_img
+
+
