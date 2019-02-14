@@ -13,7 +13,7 @@ import math
 import random
 import collections
 import uuid # used for tracking experiments
-import qrng
+import qrng # import quantum rng
 
 try:
     import Image
@@ -22,12 +22,14 @@ except ImportError:
 
     
 class Model:
-    def __init__(self, width, height):
-        #initialize
+    def __init__(self, width, height, sim, noisy, noise_only, verbose): # inclues variables for quantum
 
-        
         self.stationary = []
-                
+               
+        self.sim = sim
+        self.noisy = noisy
+        self.noise_only = noise_only
+        self.verbose = verbose
 
         self.FMX = width
         self.FMY = height
@@ -111,7 +113,7 @@ class Model:
         distribution = [0 for _ in range(0,self.T)]
         for t in range(0,self.T):
             distribution[t] = self.stationary[t] if self.wave[argminx][argminy][t] else 0
-        r = StuffRandom(distribution, self.qrng.rand())
+        r = StuffRandom(distribution, self.qrng.rand()) # choose a random option using the qrng
         for t in range(0,self.T):
             self.wave[argminx][argminy][t] = (t == r)
         self.changes[argminx][argminy] = True
@@ -126,7 +128,8 @@ class Model:
         
         self.rng = random.Random() # rng for random pertubations to entropy
         self.rng.seed(seed)
-        self.qrng = qrng.qrng() # quantum rng for wavefunction collapse
+        self.qrng = qrng.qrng(sim=self.sim,noisy=self.noisy,noise_only=self.noise_only,verbose=self.verbose)
+        
         
         l = 0
         while (l < limit) or (0 == limit): # if limit == 0, then don't stop
@@ -164,11 +167,11 @@ class Model:
     
 class OverlappingModel(Model):
         
-    def __init__(self, width, height, name, N_value = 2, periodic_input_value = True, periodic_output_value = False, symmetry_value = 8, ground_value = 0):
+    def __init__(self, width, height, name, N_value = 2, periodic_input_value = True, periodic_output_value = False, symmetry_value = 8, ground_value = 0, sim=True, noisy=False, noise_only=False, verbose=True): # inclues variables for quantum
         """
         Initializes the model.
         """
-        super( OverlappingModel, self).__init__(width, height)
+        super( OverlappingModel, self).__init__(width, height, sim, noisy, noise_only, verbose) # inclues variables for quantum
         self.propagator = [[[[]]]]
         self.N = N_value
         self.periodic = periodic_output_value
@@ -540,11 +543,11 @@ class Program:
     def __init__(self):
         pass
     
-    def Main(self,tag='overlapping',name='Cat',height=48,width=48,N=2,periodicInput=True,periodic=False,symmetry=8,ground=0,screenshots=2,limit=0):
+    def Main(self,tag='overlapping',name='Cat',height=48,width=48,N=2,periodicInput=True,periodic=False,symmetry=8,ground=0,screenshots=2,limit=0, sim=True, noisy=False, noise_only=False, verbose=True): # inclues variables for quantum
         
         self.random = random.Random()
 
-        a_model = OverlappingModel( width, height, name, N, periodicInput, periodic, symmetry, ground )
+        a_model = OverlappingModel( width, height, name, N, periodicInput, periodic, symmetry, ground, sim, noisy, noise_only, verbose ) # inclues variables for quantum
 
         for i in range(0, screenshots):
             for k in range(0, 10):
